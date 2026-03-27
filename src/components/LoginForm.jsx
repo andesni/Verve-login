@@ -17,17 +17,14 @@ const LoginForm = () => {
   const [successMessage, setSuccessMessage] = useState(
     location.state?.successMessage || "",
   );
+  const messageState = location.state?.successMessage;
+  const [loading, setLoading] = useState(false);
 
   const TEST_MAIL = "username@test.com";
 
-  // Get password from localStorage, default to 'password123'
-  const getStoredPassword = () => {
-    return localStorage.getItem("userPassword") || "password123";
-  };
-
   useEffect(() => {
     if (location.state?.successMessage) {
-      // Auto-dismiss after 5 seconds - CORRECT SYNTAX
+      // Auto-dismiss after 5 seconds
       const timer = setTimeout(() => setSuccessMessage(""), 5000);
 
       // Clear navigation state
@@ -36,27 +33,60 @@ const LoginForm = () => {
       // Cleanup timer on unmount
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [location.state?.successMessage]);
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     setError("");
+    setLoading(true);
+    try {
+      const response = await fetch(
+        "https://verve-portal-service.k8.isw.la/api/v1/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        }
+      );
 
-    const storedPassword = getStoredPassword();
+      const responseData = await response.json();
 
-    if (email !== TEST_MAIL || password !== storedPassword) {
-      setError("Invalid email or password");
+      if(!response.ok){
+        setError(responseData.message || "Login failed");
+        setLoading(false);
+        setTimeout(() => setError(""), 5000);
+        return;
+      }
+
+
+      console.log("Login success", responseData);
+      const {data} = responseData ?? {};
+
+      localStorage.setItem("authToken", data.token);
+      if (data){
+        localStorage.setItem("user", JSON.stringify(data));
+      }
+
+      navigate("/home");
+      setLoading(false);
+
+    } catch (error) {
+      console.log('Login error:',error);
+      setError("Network error");
+      setLoading(false);
       setTimeout(() => setError(""), 5000);
-      return;
     }
-
-    console.log("Log in Success!!");
-    navigate("/home");
+    
   };
 
   return (
@@ -141,7 +171,7 @@ const LoginForm = () => {
           <RememberMe />
         </div>
 
-        <LoginButton text="Log In" />
+        <LoginButton text={loading ? "Logging in.." : "Log in"} disabled={loading} />
       </form>
     </div>
   );
