@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordState from './pages/ForgotPasswordState';
 import ResetPassword from './pages/ResetPassword';
+import ProtectedRoute from './components/ProtectedRoute';
+
 
 
 const App = () => {
@@ -14,7 +16,13 @@ const App = () => {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/home" 
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+         } 
+        />
         <Route path="/forgotpasswordstate" element={<ForgotPasswordState />} />
         <Route path="/resetpassword" element={<ResetPassword/>} />
       </Routes>
